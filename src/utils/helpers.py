@@ -3,7 +3,8 @@ def clean_names(names: list) -> list:
 
 
 def active_records(records: list) -> list:
-    return list(filter(lambda r: r.get("status") == "No", records))
+    stayed = ("No", "no", 0, "0", False)
+    return list(filter(lambda r: r.get("status") in stayed, records))
 
 
 def high_salary(records: list, limit: int = 10000) -> list:
