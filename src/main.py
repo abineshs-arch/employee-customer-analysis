@@ -4,6 +4,7 @@ from src.analysis.analyzer import DataAnalyzer
 from src.api.client import APIClient
 from src.data.cleaner import DataCleaner
 from src.data.loader import DataLoader
+from src.reports.generator import ReportGenerator
 from src.visualization.charts import VisualizationManager
 
 
@@ -28,12 +29,18 @@ def main() -> None:
     charts = VisualizationManager(cleaner.df).render_all()
     print("Charts saved:", charts)
 
+    benchmark = {}
     client = APIClient()
     payload = client.fetch_rates()
     if payload:
         benchmark = client.parse_benchmark(payload)
         client.save_cache(benchmark, "data/processed/api_cache.json")
         print("Benchmark rates:", benchmark)
+
+    metrics = ReportGenerator(
+        cleaner.df, cleaner.report, len(raw_df), charts, benchmark
+    ).generate()
+    print("Reports written to outputs/. Top department:", metrics["top_department"])
 
 
 if __name__ == "__main__":
