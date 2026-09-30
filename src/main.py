@@ -4,7 +4,9 @@ from src.analysis.analyzer import DataAnalyzer
 from src.api.client import APIClient
 from src.data.cleaner import DataCleaner
 from src.data.loader import DataLoader
+from src.data.processor import EmployeeDataProcessor
 from src.reports.generator import ReportGenerator
+from src.utils import helpers
 from src.visualization.charts import VisualizationManager
 
 
@@ -19,6 +21,15 @@ def main() -> None:
         .rename_columns()
     )
     cleaner.save("data/processed/cleaned_employees.csv")
+
+    records = cleaner.df.to_dict("records")
+    active = helpers.active_records(records)
+    high = helpers.high_salary(active, limit=10000)
+    print("Active employees:", len(active))
+    print("High earners (>10000):", len(high))
+    print("Salary range:", helpers.salary_range(active))
+    processed = EmployeeDataProcessor(cleaner.df, min_salary=5000).process()
+    print("Employees earning >= 5000:", len(processed))
 
     analyzer = DataAnalyzer(cleaner.df)
     print(analyzer.numpy_operations())
