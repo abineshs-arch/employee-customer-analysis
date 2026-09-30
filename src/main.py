@@ -1,0 +1,58 @@
+import pandas as pd
+
+from src.analysis.analyzer import DataAnalyzer
+from src.api.client import APIClient
+from src.data.cleaner import DataCleaner
+from src.data.loader import DataLoader
+from src.data.processor import EmployeeDataProcessor
+from src.reports.generator import ReportGenerator
+from src.utils import helpers
+from src.visualization.charts import VisualizationManager
+
+
+def main() -> None:
+    raw_df = DataLoader("data/raw/employees.csv").load()
+    cleaner = DataCleaner(raw_df)
+    (
+        cleaner.remove_duplicates()
+        .strip_text()
+        .fix_numeric_types(["MonthlyIncome", "Age"])
+        .handle_missing()
+        .rename_columns()
+    )
+    cleaner.save("data/processed/cleaned_employees.csv")
+
+    records = cleaner.df.to_dict("records")
+    active = helpers.active_records(records)
+    high = helpers.high_salary(active, limit=10000)
+    print("Active employees:", len(active))
+    print("High earners (>10000):", len(high))
+    print("Salary range:", helpers.salary_range(active))
+    processed = EmployeeDataProcessor(cleaner.df, min_salary=5000).process()
+    print("Employees earning >= 5000:", len(processed))
+
+    analyzer = DataAnalyzer(cleaner.df)
+    print(analyzer.numpy_operations())
+    print(analyzer.department_summary())
+    merged = analyzer.merge_departments(pd.read_csv("data/raw/departments.csv"))
+    print(merged[["employee_id", "department", "salary", "budget"]].head())
+
+    charts = VisualizationManager(cleaner.df).render_all()
+    print("Charts saved:", charts)
+
+    benchmark = {}
+    client = APIClient()
+    payload = client.fetch_rates()
+    if payload:
+        benchmark = client.parse_benchmark(payload)
+        client.save_cache(benchmark, "data/processed/api_cache.json")
+        print("Benchmark rates:", benchmark)
+
+    metrics = ReportGenerator(
+        cleaner.df, cleaner.report, len(raw_df), charts, benchmark
+    ).generate()
+    print("Reports written to outputs/. Top department:", metrics["top_department"])
+
+
+if __name__ == "__main__":
+    main()
