@@ -4,6 +4,7 @@ from src.analysis.analyzer import DataAnalyzer
 from src.api.client import APIClient
 from src.data.cleaner import DataCleaner
 from src.data.loader import DataLoader
+from src.visualization.charts import VisualizationManager
 
 
 def main() -> None:
@@ -23,6 +24,9 @@ def main() -> None:
     print(analyzer.department_summary())
     merged = analyzer.merge_departments(pd.read_csv("data/raw/departments.csv"))
     print(merged[["employee_id", "department", "salary", "budget"]].head())
+
+    charts = VisualizationManager(cleaner.df).render_all()
+    print("Charts saved:", charts)
 
     client = APIClient()
     payload = client.fetch_rates()
